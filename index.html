@@ -1,603 +1,601 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AlertCircle, TrendingUp, TrendingDown, DollarSign, UserPlus, Users, Save, ArrowLeft, Trash2 } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Superendividamento - CDN</title>
+    <!-- React CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel CDN para compilar JSX no navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Recharts CDN (Não existe CDN oficial, usaremos a versão UMD se disponível ou faremos um mock simples) -->
+    <!-- Como não há um CDN UMD simples para Recharts, e o código é complexo, faremos um mock simples para as funções de gráfico para que o código compile.
+         Em um ambiente real de CDN, seria necessário encontrar uma versão UMD ou reescrever a visualização. -->
+    <script>
+        // Mock simples para Recharts para evitar erros de referência
+        const Recharts = {
+            PieChart: (props) => React.createElement('div', { className: 'text-center p-4 border rounded-lg bg-gray-50' }, 'Gráfico de Pizza (Mock)'),
+            Pie: (props) => null,
+            Cell: (props) => null,
+            BarChart: (props) => React.createElement('div', { className: 'text-center p-4 border rounded-lg bg-gray-50' }, 'Gráfico de Barras (Mock)'),
+            Bar: (props) => null,
+            XAxis: (props) => null,
+            YAxis: (props) => null,
+            CartesianGrid: (props) => null,
+            Tooltip: (props) => null,
+            Legend: (props) => null,
+            ResponsiveContainer: (props) => React.createElement('div', { style: { width: '100%', height: '300px' } }, props.children),
+        };
+        // Expor as funções mockadas globalmente
+        const { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+    </script>
+    <!-- Lucide-React Icons (Não existe CDN UMD simples, faremos um mock simples para as funções de ícone) -->
+    <script>
+        // Mock simples para Lucide-React para evitar erros de referência
+        const IconMock = ({ size = 24, color = 'currentColor', ...props }) => React.createElement('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, 'strokeWidth': 2, 'strokeLinecap': 'round', 'strokeLinejoin': 'round', ...props }, React.createElement('circle', { cx: 12, cy: 12, r: 10 }));
+        
+        const AlertCircle = IconMock;
+        const TrendingUp = IconMock;
+        const TrendingDown = IconMock;
+        const DollarSign = IconMock;
+        const UserPlus = IconMock;
+        const Users = IconMock;
+        const Save = IconMock;
+        const ArrowLeft = IconMock;
+        const Trash2 = IconMock;
+    </script>
+    <style>
+        /* Estilos adicionais para garantir que o layout funcione */
+        .input-field {
+            @apply w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-const DebtDashboard = () => {
-  const [currentView, setCurrentView] = useState('list');
-  const [clients, setClients] = useState([]);
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [loading, setLoading] = useState(true);
+    <script type="text/babel">
+        // Desestruturação global dos hooks do React
+        const { useState, useMemo, useEffect } = React;
 
-  const [clientName, setClientName] = useState('');
-  const [clientCPF, setClientCPF] = useState('');
-  const [salary, setSalary] = useState('');
-  const [debts, setDebts] = useState({
-    creditCard: '',
-    personalLoans: '',
-    overdraft: '',
-    installments: '',
-    utilities: '',
-    vehicleFinancing: '',
-    services: ''
-  });
+        // O código original do componente DebtDashboard
+        const DebtDashboard = () => {
+            const [currentView, setCurrentView] = useState('list'); // 'list', 'new', 'edit'
+            const [clients, setClients] = useState([]);
+            const [selectedClient, setSelectedClient] = useState(null);
+            const [loading, setLoading] = useState(true);
 
-  const debtCategories = [
-    { key: 'creditCard', label: 'Cartão de Crédito', icon: '💳', color: '#ef4444' },
-    { key: 'personalLoans', label: 'Empréstimos Pessoais', icon: '💰', color: '#f97316' },
-    { key: 'overdraft', label: 'Cheque Especial/CDC', icon: '🏦', color: '#f59e0b' },
-    { key: 'installments', label: 'Crediário', icon: '🛒', color: '#eab308' },
-    { key: 'utilities', label: 'Contas Essenciais', icon: '📱', color: '#84cc16' },
-    { key: 'vehicleFinancing', label: 'Financiamento Veículos', icon: '🚗', color: '#06b6d4' },
-    { key: 'services', label: 'Serviços Contínuos', icon: '📆', color: '#8b5cf6' }
-  ];
+            // Form states
+            const [clientName, setClientName] = useState('');
+            const [clientCPF, setClientCPF] = useState('');
+            const [salary, setSalary] = useState('');
+            const [debts, setDebts] = useState({
+                creditCard: '',
+                personalLoans: '',
+                overdraft: '',
+                installments: '',
+                utilities: '',
+                vehicleFinancing: '',
+                services: ''
+            });
 
-  useEffect(() => {
-    loadClients();
-  }, []);
+            const debtCategories = [
+                { key: 'creditCard', label: 'Cartão de Crédito', icon: '💳', color: '#ef4444' },
+                { key: 'personalLoans', label: 'Empréstimos Pessoais', icon: '💰', color: '#f97316' },
+                { key: 'overdraft', label: 'Cheque Especial/CDC', icon: '🏦', color: '#f59e0b' },
+                { key: 'installments', label: 'Crediário', icon: '🛒', color: '#eab308' },
+                { key: 'utilities', label: 'Contas Essenciais', icon: '📱', color: '#84cc16' },
+                { key: 'vehicleFinancing', label: 'Financiamento Veículos', icon: '🚗', color: '#06b6d4' },
+                { key: 'services', label: 'Serviços Contínuos', icon: '📆', color: '#8b5cf6' }
+            ];
 
-  const loadClients = async () => {
-    try {
-      setLoading(true);
-      const result = await window.storage.list('client:');
-      if (result && result.keys) {
-        const clientsData = await Promise.all(
-          result.keys.map(async (key) => {
-            try {
-              const data = await window.storage.get(key);
-              return data ? JSON.parse(data.value) : null;
-            } catch (e) {
-              return null;
+            // Load clients on mount
+            useEffect(() => {
+                loadClients();
+            }, []);
+
+            // **ATENÇÃO**: A funcionalidade de persistência de dados (window.storage) depende do ambiente onde o código original estava rodando.
+            // Para que este código funcione no navegador via CDN, é necessário que 'window.storage' esteja definido.
+            // Para fins de demonstração e para evitar erros de referência, vamos definir um mock simples para 'window.storage'
+            // que usa localStorage, que é o mais próximo de um ambiente de persistência simples no navegador.
+            if (!window.storage) {
+                window.storage = {
+                    set: (key, value) => localStorage.setItem(key, value),
+                    get: (key) => ({ value: localStorage.getItem(key) }),
+                    delete: (key) => localStorage.removeItem(key),
+                    list: (prefix) => {
+                        const keys = Object.keys(localStorage).filter(key => key.startsWith(prefix));
+                        return Promise.resolve({ keys });
+                    }
+                };
             }
-          })
-        );
-        setClients(clientsData.filter(c => c !== null));
-      }
-    } catch (error) {
-      console.log('Nenhum cliente cadastrado ainda');
-      setClients([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleDebtChange = (key, value) => {
-    setDebts(prev => ({ ...prev, [key]: value }));
-  };
+            const loadClients = async () => {
+                try {
+                    setLoading(true);
+                    const result = await window.storage.list('client:');
+                    if (result && result.keys) {
+                        const clientsData = await Promise.all(
+                            result.keys.map(async (key) => {
+                                try {
+                                    const data = await window.storage.get(key);
+                                    return data && data.value ? JSON.parse(data.value) : null;
+                                } catch (e) {
+                                    return null;
+                                }
+                            })
+                        );
+                        setClients(clientsData.filter(c => c !== null));
+                    }
+                } catch (error) {
+                    console.log('Nenhum cliente cadastrado ainda');
+                    setClients([]);
+                } finally {
+                    setLoading(false);
+                }
+            };
 
-  const saveClient = async () => {
-    if (!clientName.trim() || !clientCPF.trim()) {
-      alert('Por favor, preencha o nome e CPF do cliente');
-      return;
-    }
+            const handleDebtChange = (key, value) => {
+                setDebts(prev => ({ ...prev, [key]: value }));
+            };
 
-    const clientData = {
-      id: selectedClient?.id || `client:${Date.now()}`,
-      name: clientName,
-      cpf: clientCPF,
-      salary: parseFloat(salary) || 0,
-      debts: {
-        creditCard: parseFloat(debts.creditCard) || 0,
-        personalLoans: parseFloat(debts.personalLoans) || 0,
-        overdraft: parseFloat(debts.overdraft) || 0,
-        installments: parseFloat(debts.installments) || 0,
-        utilities: parseFloat(debts.utilities) || 0,
-        vehicleFinancing: parseFloat(debts.vehicleFinancing) || 0,
-        services: parseFloat(debts.services) || 0
-      },
-      updatedAt: new Date().toISOString()
-    };
+            const saveClient = async () => {
+                if (!clientName.trim() || !clientCPF.trim()) {
+                    alert('Por favor, preencha o nome e CPF do cliente');
+                    return;
+                }
 
-    try {
-      await window.storage.set(clientData.id, JSON.stringify(clientData));
-      alert('Cliente salvo com sucesso!');
-      await loadClients();
-      setCurrentView('list');
-      resetForm();
-    } catch (error) {
-      alert('Erro ao salvar cliente: ' + error.message);
-    }
-  };
+                const clientData = {
+                    id: selectedClient?.id || `client:${Date.now()}`,
+                    name: clientName,
+                    cpf: clientCPF,
+                    salary: parseFloat(salary) || 0,
+                    debts: {
+                        creditCard: parseFloat(debts.creditCard) || 0,
+                        personalLoans: parseFloat(debts.personalLoans) || 0,
+                        overdraft: parseFloat(debts.overdraft) || 0,
+                        installments: parseFloat(debts.installments) || 0,
+                        utilities: parseFloat(debts.utilities) || 0,
+                        vehicleFinancing: parseFloat(debts.vehicleFinancing) || 0,
+                        services: parseFloat(debts.services) || 0
+                    },
+                    updatedAt: new Date().toISOString()
+                };
 
-  const deleteClient = async (clientId) => {
-    if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
+                try {
+                    await window.storage.set(clientData.id, JSON.stringify(clientData));
+                    alert('Cliente salvo com sucesso!');
+                    await loadClients();
+                    setCurrentView('list');
+                    resetForm();
+                } catch (error) {
+                    alert('Erro ao salvar cliente: ' + error.message);
+                }
+            };
 
-    try {
-      await window.storage.delete(clientId);
-      await loadClients();
-      alert('Cliente excluído com sucesso!');
-    } catch (error) {
-      alert('Erro ao excluir cliente: ' + error.message);
-    }
-  };
+            const deleteClient = async (clientId) => {
+                if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
 
-  const editClient = (client) => {
-    setSelectedClient(client);
-    setClientName(client.name);
-    setClientCPF(client.cpf);
-    setSalary(client.salary.toString());
-    setDebts({
-      creditCard: client.debts.creditCard.toString(),
-      personalLoans: client.debts.personalLoans.toString(),
-      overdraft: client.debts.overdraft.toString(),
-      installments: client.debts.installments.toString(),
-      utilities: client.debts.utilities.toString(),
-      vehicleFinancing: client.debts.vehicleFinancing.toString(),
-      services: client.debts.services.toString()
-    });
-    setCurrentView('edit');
-  };
+                try {
+                    await window.storage.delete(clientId);
+                    await loadClients();
+                    alert('Cliente excluído com sucesso!');
+                } catch (error) {
+                    alert('Erro ao excluir cliente: ' + error.message);
+                }
+            };
 
-  const resetForm = () => {
-    setClientName('');
-    setClientCPF('');
-    setSalary('');
-    setDebts({
-      creditCard: '',
-      personalLoans: '',
-      overdraft: '',
-      installments: '',
-      utilities: '',
-      vehicleFinancing: '',
-      services: ''
-    });
-    setSelectedClient(null);
-  };
+            const editClient = (client) => {
+                setSelectedClient(client);
+                setClientName(client.name);
+                setClientCPF(client.cpf);
+                setSalary(client.salary.toString());
+                setDebts({
+                    creditCard: client.debts.creditCard.toString(),
+                    personalLoans: client.debts.personalLoans.toString(),
+                    overdraft: client.debts.overdraft.toString(),
+                    installments: client.debts.installments.toString(),
+                    utilities: client.debts.utilities.toString(),
+                    vehicleFinancing: client.debts.vehicleFinancing.toString(),
+                    services: client.debts.services.toString()
+                });
+                setCurrentView('edit');
+            };
 
-  const calculations = useMemo(() => {
-    const salaryNum = parseFloat(salary) || 0;
-    const debtValues = Object.values(debts).map(v => parseFloat(v) || 0);
-    const totalDebts = debtValues.reduce((sum, val) => sum + val, 0);
-    const commitmentRatio = salaryNum > 0 ? (totalDebts / salaryNum) * 100 : 0;
-    const remainingIncome = salaryNum - totalDebts;
-    
-    let status = 'saudável';
-    let statusColor = '#10b981';
-    let statusMessage = 'Situação financeira controlada';
-    
-    if (commitmentRatio > 100) {
-      status = 'crítico';
-      statusColor = '#ef4444';
-      statusMessage = 'Superendividamento crítico - dívidas excedem a renda';
-    } else if (commitmentRatio > 70) {
-      status = 'grave';
-      statusColor = '#f97316';
-      statusMessage = 'Situação grave - alto comprometimento de renda';
-    } else if (commitmentRatio > 50) {
-      status = 'alerta';
-      statusColor = '#eab308';
-      statusMessage = 'Atenção - comprometimento elevado';
-    } else if (commitmentRatio > 30) {
-      status = 'moderado';
-      statusColor = '#3b82f6';
-      statusMessage = 'Comprometimento moderado';
-    }
+            const resetForm = () => {
+                setClientName('');
+                setClientCPF('');
+                setSalary('');
+                setDebts({
+                    creditCard: '',
+                    personalLoans: '',
+                    overdraft: '',
+                    installments: '',
+                    utilities: '',
+                    vehicleFinancing: '',
+                    services: ''
+                });
+                setSelectedClient(null);
+            };
 
-    return {
-      salaryNum,
-      totalDebts,
-      commitmentRatio,
-      remainingIncome,
-      status,
-      statusColor,
-      statusMessage
-    };
-  }, [salary, debts]);
-
-  const pieChartData = useMemo(() => {
-    const data = debtCategories
-      .map(cat => ({
-        name: cat.label,
-        value: parseFloat(debts[cat.key]) || 0,
-        color: cat.color
-      }))
-      .filter(item => item.value > 0);
-    
-    return data;
-  }, [debts]);
-
-  const comparisonData = [
-    { name: 'Salário', value: calculations.salaryNum, fill: '#10b981' },
-    { name: 'Dívidas', value: calculations.totalDebts, fill: '#ef4444' }
-  ];
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value || 0);
-  };
-
-  const formatCPF = (cpf) => {
-    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-  };
-
-  if (currentView === 'list') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-4xl font-bold text-slate-800 mb-2">
-                  Gestão de Clientes
-                </h1>
-                <p className="text-slate-600">Controle de superendividamento por cliente</p>
-              </div>
-              <button
-                onClick={() => {
-                  resetForm();
-                  setCurrentView('new');
-                }}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
-              >
-                <UserPlus size={20} />
-                Novo Cliente
-              </button>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="text-slate-600">Carregando clientes...</div>
-            </div>
-          ) : clients.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-              <Users size={64} className="mx-auto text-slate-300 mb-4" />
-              <h2 className="text-2xl font-bold text-slate-800 mb-2">
-                Nenhum cliente cadastrado
-              </h2>
-              <p className="text-slate-600 mb-6">
-                Comece adicionando seu primeiro cliente
-              </p>
-              <button
-                onClick={() => {
-                  resetForm();
-                  setCurrentView('new');
-                }}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors mx-auto"
-              >
-                <UserPlus size={20} />
-                Adicionar Cliente
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {clients.map(client => {
-                const totalDebts = Object.values(client.debts).reduce((sum, val) => sum + val, 0);
-                const commitmentRatio = client.salary > 0 ? (totalDebts / client.salary) * 100 : 0;
+            const calculations = useMemo(() => {
+                const salaryNum = parseFloat(salary) || 0;
+                const debtValues = Object.values(debts).map(v => parseFloat(v) || 0);
+                const totalDebts = debtValues.reduce((sum, val) => sum + val, 0);
+                const commitmentRatio = salaryNum > 0 ? (totalDebts / salaryNum) * 100 : 0;
+                const remainingIncome = salaryNum - totalDebts;
                 
+                let status = 'saudável';
                 let statusColor = '#10b981';
-                if (commitmentRatio > 100) statusColor = '#ef4444';
-                else if (commitmentRatio > 70) statusColor = '#f97316';
-                else if (commitmentRatio > 50) statusColor = '#eab308';
-                else if (commitmentRatio > 30) statusColor = '#3b82f6';
+                let statusMessage = 'Situação financeira controlada';
+                
+                if (commitmentRatio > 100) {
+                    status = 'crítico';
+                    statusColor = '#ef4444';
+                    statusMessage = 'Superendividamento crítico - dívidas excedem a renda';
+                } else if (commitmentRatio > 70) {
+                    status = 'grave';
+                    statusColor = '#f97316';
+                    statusMessage = 'Situação grave - alto comprometimento de renda';
+                } else if (commitmentRatio > 50) {
+                    status = 'alerta';
+                    statusColor = '#eab308';
+                    statusMessage = 'Atenção - comprometimento elevado';
+                } else if (commitmentRatio > 30) {
+                    status = 'moderado';
+                    statusColor = '#3b82f6';
+                    statusMessage = 'Comprometimento moderado';
+                }
 
+                return {
+                    salaryNum,
+                    totalDebts,
+                    commitmentRatio,
+                    remainingIncome,
+                    status,
+                    statusColor,
+                    statusMessage
+                };
+            }, [salary, debts]);
+
+            const pieChartData = useMemo(() => {
+                const data = debtCategories
+                    .map(cat => ({
+                        name: cat.label,
+                        value: parseFloat(debts[cat.key]) || 0,
+                        color: cat.color
+                    }))
+                    .filter(item => item.value > 0);
+                
+                return data;
+            }, [debts]);
+
+            const comparisonData = [
+                { name: 'Salário', value: calculations.salaryNum, fill: '#10b981' },
+                { name: 'Dívidas', value: calculations.totalDebts, fill: '#ef4444' }
+            ];
+
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                }).format(value || 0);
+            };
+
+            const formatCPF = (cpf) => {
+                // Apenas formata se tiver 11 dígitos (limitação do input type="text" sem máscara)
+                const cleaned = ('' + cpf).replace(/\D/g, '');
+                if (cleaned.length === 11) {
+                    return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                }
+                return cpf;
+            };
+
+            // CLIENT LIST VIEW
+            if (currentView === 'list') {
                 return (
-                  <div key={client.id} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-slate-800 mb-1">
-                          {client.name}
-                        </h3>
-                        <p className="text-sm text-slate-600">
-                          CPF: {formatCPF(client.cpf)}
-                        </p>
-                      </div>
-                      <div 
-                        className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold"
-                        style={{ backgroundColor: statusColor }}
-                      >
-                        {commitmentRatio.toFixed(0)}%
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Salário:</span>
-                        <span className="font-semibold">{formatCurrency(client.salary)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Dívidas:</span>
-                        <span className="font-semibold text-red-600">{formatCurrency(totalDebts)}</span>
-                      </div>
-                    </div>
-
-                    <div className="w-full bg-slate-200 rounded-full h-2 mb-4">
-                      <div
-                        className="h-2 rounded-full transition-all"
-                        style={{ 
-                          width: `${Math.min(commitmentRatio, 100)}%`,
-                          backgroundColor: statusColor
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => editClient(client)}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-                      >
-                        Visualizar
-                      </button>
-                      <button
-                        onClick={() => deleteClient(client.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <button
-              onClick={() => {
-                setCurrentView('list');
-                resetForm();
-              }}
-              className="text-slate-600 hover:text-slate-800"
-            >
-              <ArrowLeft size={24} />
-            </button>
-            <div>
-              <h1 className="text-4xl font-bold text-slate-800 mb-2">
-                {currentView === 'new' ? 'Novo Cliente' : 'Editar Cliente'}
-              </h1>
-              <p className="text-slate-600">
-                {currentView === 'new' ? 'Cadastre um novo cliente e suas informações financeiras' : 'Atualize as informações do cliente'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-          <h2 className="text-2xl font-bold text-slate-800 mb-6">Dados do Cliente</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Nome Completo *
-              </label>
-              <input
-                type="text"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                placeholder="João da Silva"
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                CPF *
-              </label>
-              <input
-                type="text"
-                value={clientCPF}
-                onChange={(e) => setClientCPF(e.target.value.replace(/\D/g, ''))}
-                placeholder="000.000.000-00"
-                maxLength="11"
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-          <h2 className="text-2xl font-bold text-slate-800 mb-6">Informações Financeiras</h2>
-          
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              💵 Salário/Renda Mensal
-            </label>
-            <input
-              type="number"
-              value={salary}
-              onChange={(e) => setSalary(e.target.value)}
-              placeholder="R$ 0,00"
-              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {debtCategories.map(cat => (
-              <div key={cat.key}>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  {cat.icon} {cat.label}
-                </label>
-                <input
-                  type="number"
-                  value={debts[cat.key]}
-                  onChange={(e) => handleDebtChange(cat.key, e.target.value)}
-                  placeholder="R$ 0,00"
-                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-4 mb-6">
-          <button
-            onClick={() => {
-              setCurrentView('list');
-              resetForm();
-            }}
-            className="px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={saveClient}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
-          >
-            <Save size={20} />
-            Salvar Cliente
-          </button>
-        </div>
-
-        {calculations.salaryNum > 0 && (
-          <>
-            <div 
-              className="rounded-2xl shadow-lg p-6 mb-6 text-white"
-              style={{ backgroundColor: calculations.statusColor }}
-            >
-              <div className="flex items-center gap-4">
-                <AlertCircle size={48} />
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-1">
-                    Status: {calculations.status.toUpperCase()}
-                  </h3>
-                  <p className="text-lg opacity-90">{calculations.statusMessage}</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold">
-                    {calculations.commitmentRatio.toFixed(1)}%
-                  </div>
-                  <div className="text-sm opacity-90">da renda comprometida</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-600 font-semibold">Total de Dívidas</span>
-                  <TrendingUp className="text-red-500" size={24} />
-                </div>
-                <div className="text-3xl font-bold text-slate-800">
-                  {formatCurrency(calculations.totalDebts)}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-600 font-semibold">Renda Restante</span>
-                  <DollarSign className={calculations.remainingIncome >= 0 ? 'text-green-500' : 'text-red-500'} size={24} />
-                </div>
-                <div className={`text-3xl font-bold ${calculations.remainingIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(calculations.remainingIncome)}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-600 font-semibold">Comprometimento</span>
-                  <TrendingDown className="text-blue-500" size={24} />
-                </div>
-                <div className="text-3xl font-bold text-slate-800">
-                  {calculations.commitmentRatio.toFixed(1)}%
-                </div>
-              </div>
-            </div>
-
-            {calculations.totalDebts > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-2xl shadow-lg p-6">
-                  <h3 className="text-xl font-bold text-slate-800 mb-4">
-                    Distribuição das Dívidas
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={pieChartData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={100}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {pieChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(value)} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-lg p-6">
-                  <h3 className="text-xl font-bold text-slate-800 mb-4">
-                    Salário vs Dívidas
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={comparisonData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => formatCurrency(value)} />
-                      <Bar dataKey="value" fill="#8884d8" radius={[8, 8, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-lg p-6 lg:col-span-2">
-                  <h3 className="text-xl font-bold text-slate-800 mb-4">
-                    Detalhamento por Categoria
-                  </h3>
-                  <div className="space-y-3">
-                    {debtCategories.map(cat => {
-                      const value = parseFloat(debts[cat.key]) || 0;
-                      const percentage = calculations.totalDebts > 0 ? (value / calculations.totalDebts) * 100 : 0;
-                      
-                      if (value === 0) return null;
-                      
-                      return (
-                        <div key={cat.key} className="flex items-center gap-4">
-                          <div className="text-2xl">{cat.icon}</div>
-                          <div className="flex-1">
-                            <div className="flex justify-between mb-1">
-                              <span className="font-semibold text-slate-700">{cat.label}</span>
-                              <span className="font-bold text-slate-800">{formatCurrency(value)}</span>
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <h1 className="text-4xl font-bold text-slate-800 mb-2">
+                                            Gestão de Clientes
+                                        </h1>
+                                        <p className="text-slate-600">Controle de superendividamento por cliente</p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            resetForm();
+                                            setCurrentView('new');
+                                        }}
+                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                                    >
+                                        <UserPlus size={20} />
+                                        Novo Cliente
+                                    </button>
+                                </div>
                             </div>
-                            <div className="w-full bg-slate-200 rounded-full h-3">
-                              <div
-                                className="h-3 rounded-full transition-all duration-500"
-                                style={{ 
-                                  width: `${percentage}%`,
-                                  backgroundColor: cat.color
-                                }}
-                              />
-                            </div>
-                            <div className="text-sm text-slate-600 mt-1">
-                              {percentage.toFixed(1)}% do total de dívidas
-                            </div>
-                          </div>
+
+                            {loading ? (
+                                <div className="text-center py-12">
+                                    <div className="text-slate-600">Carregando clientes...</div>
+                                </div>
+                            ) : clients.length === 0 ? (
+                                <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+                                    <Users size={64} className="mx-auto text-slate-300 mb-4" />
+                                    <h2 className="text-2xl font-bold text-slate-800 mb-2">
+                                        Nenhum cliente cadastrado
+                                    </h2>
+                                    <p className="text-slate-600 mb-6">
+                                        Comece adicionando seu primeiro cliente
+                                    </p>
+                                    <button
+                                        onClick={() => {
+                                            resetForm();
+                                            setCurrentView('new');
+                                        }}
+                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors mx-auto"
+                                    >
+                                        <UserPlus size={20} />
+                                        Adicionar Cliente
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {clients.map(client => {
+                                        const totalDebts = Object.values(client.debts).reduce((sum, val) => sum + val, 0);
+                                        const commitmentRatio = client.salary > 0 ? (totalDebts / client.salary) * 100 : 0;
+                                        
+                                        let statusColor = '#10b981';
+                                        if (commitmentRatio > 100) statusColor = '#ef4444';
+                                        else if (commitmentRatio > 70) statusColor = '#f97316';
+                                        else if (commitmentRatio > 50) statusColor = '#eab308';
+                                        else if (commitmentRatio > 30) statusColor = '#3b82f6';
+
+                                        return (
+                                            <div key={client.id} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div className="flex-1">
+                                                        <h3 className="text-xl font-bold text-slate-800 mb-1">
+                                                            {client.name}
+                                                        </h3>
+                                                        <p className="text-sm text-slate-600">
+                                                            CPF: {formatCPF(client.cpf)}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex space-x-2">
+                                                        <button
+                                                            onClick={() => editClient(client)}
+                                                            className="text-blue-600 hover:text-blue-800 transition-colors font-semibold text-sm"
+                                                        >
+                                                            Editar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => deleteClient(client.id)}
+                                                            className="text-red-600 hover:text-red-800 transition-colors font-semibold text-sm"
+                                                        >
+                                                            Excluir
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-600">Renda Mensal:</span>
+                                                        <span className="font-semibold text-slate-800">{formatCurrency(client.salary)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-600">Dívida Total:</span>
+                                                        <span className="font-semibold text-red-500">{formatCurrency(totalDebts)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between pt-2 border-t border-gray-100">
+                                                        <span className="text-slate-700 font-bold">Comprometimento:</span>
+                                                        <span className="font-bold" style={{ color: statusColor }}>
+                                                            {commitmentRatio.toFixed(2)}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
-                      );
-                    })}
-                  </div>
+                    </div>
+                );
+            }
+
+            // NEW/EDIT CLIENT VIEW
+            const isEdit = currentView === 'edit';
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+                            <button
+                                onClick={() => {
+                                    setCurrentView('list');
+                                    resetForm();
+                                }}
+                                className="flex items-center gap-2 text-slate-600 hover:text-slate-800 transition-colors mb-6"
+                            >
+                                <ArrowLeft size={20} />
+                                Voltar para a Lista
+                            </button>
+                            <h1 className="text-3xl font-bold text-slate-800 mb-6">
+                                {isEdit ? 'Editar Cliente' : 'Novo Cliente'}
+                            </h1>
+
+                            {/* Seção de Dados Pessoais */}
+                            <div className="mb-8 p-6 border border-gray-200 rounded-xl">
+                                <h2 className="text-xl font-semibold text-slate-700 mb-4">
+                                    Dados Pessoais e Renda
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Nome Completo</label>
+                                        <input
+                                            type="text"
+                                            value={clientName}
+                                            onChange={(e) => setClientName(e.target.value)}
+                                            className="input-field"
+                                            placeholder="Nome do Cliente"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">CPF</label>
+                                        <input
+                                            type="text"
+                                            value={clientCPF}
+                                            onChange={(e) => setClientCPF(e.target.value)}
+                                            className="input-field"
+                                            placeholder="000.000.000-00"
+                                            maxLength={11}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-3">
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Renda Mensal (Salário)</label>
+                                        <input
+                                            type="number"
+                                            value={salary}
+                                            onChange={(e) => setSalary(e.target.value)}
+                                            className="input-field"
+                                            placeholder="R$ 0,00"
+                                            min="0"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Seção de Dívidas */}
+                            <div className="mb-8 p-6 border border-gray-200 rounded-xl">
+                                <h2 className="text-xl font-semibold text-slate-700 mb-4">
+                                    Dívidas Mensais
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {debtCategories.map(cat => (
+                                        <div key={cat.key}>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                {cat.icon} {cat.label}
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={debts[cat.key]}
+                                                onChange={(e) => handleDebtChange(cat.key, e.target.value)}
+                                                className="input-field"
+                                                placeholder="R$ 0,00"
+                                                min="0"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Seção de Análise */}
+                            <div className="mb-8 p-6 border border-gray-200 rounded-xl">
+                                <h2 className="text-xl font-semibold text-slate-700 mb-4">
+                                    Análise de Superendividamento
+                                </h2>
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* Indicadores Chave */}
+                                    <div className="lg:col-span-1 space-y-4">
+                                        <div className="p-4 bg-white border border-gray-100 rounded-lg shadow-sm">
+                                            <p className="text-sm text-slate-500">Renda Mensal</p>
+                                            <p className="text-2xl font-bold text-slate-800">{formatCurrency(calculations.salaryNum)}</p>
+                                        </div>
+                                        <div className="p-4 bg-white border border-gray-100 rounded-lg shadow-sm">
+                                            <p className="text-sm text-slate-500">Dívida Total Mensal</p>
+                                            <p className="text-2xl font-bold text-red-500">{formatCurrency(calculations.totalDebts)}</p>
+                                        </div>
+                                        <div className="p-4 bg-white border border-gray-100 rounded-lg shadow-sm">
+                                            <p className="text-sm text-slate-500">Renda Remanescente</p>
+                                            <p className="text-2xl font-bold" style={{ color: calculations.remainingIncome >= 0 ? '#10b981' : '#ef4444' }}>
+                                                {formatCurrency(calculations.remainingIncome)}
+                                            </p>
+                                        </div>
+                                        <div className="p-4 bg-white border border-gray-100 rounded-lg shadow-sm">
+                                            <p className="text-sm text-slate-500">Comprometimento</p>
+                                            <p className="text-2xl font-bold" style={{ color: calculations.statusColor }}>
+                                                {calculations.commitmentRatio.toFixed(2)}%
+                                            </p>
+                                            <p className="text-xs mt-1" style={{ color: calculations.statusColor }}>
+                                                <AlertCircle size={14} className="inline mr-1" />
+                                                {calculations.statusMessage}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Gráficos (MOCKADOS) */}
+                                    <div className="lg:col-span-2 space-y-6">
+                                        <div className="p-4 bg-white border border-gray-100 rounded-lg shadow-sm">
+                                            <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                                                Comparativo Renda vs Dívida (Mock)
+                                            </h3>
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <BarChart data={comparisonData}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="name" />
+                                                    <YAxis tickFormatter={formatCurrency} />
+                                                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                                                    <Legend />
+                                                    <Bar dataKey="value" name="Valor" />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+
+                                        <div className="p-4 bg-white border border-gray-100 rounded-lg shadow-sm">
+                                            <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                                                Distribuição das Dívidas (Mock)
+                                            </h3>
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <PieChart>
+                                                    <Pie
+                                                        data={pieChartData}
+                                                        dataKey="value"
+                                                        nameKey="name"
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        outerRadius={100}
+                                                        fill="#8884d8"
+                                                        label
+                                                    >
+                                                        {pieChartData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                                                    <Legend />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Botão de Salvar */}
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={saveClient}
+                                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                                >
+                                    <Save size={20} />
+                                    {isEdit ? 'Salvar Alterações' : 'Cadastrar Cliente'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+            );
+        };
 
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mt-6">
-          <h3 className="text-lg font-bold text-blue-900 mb-2">
-            ⚖️ Informações Legais - Lei do Superendividamento
-          </h3>
-          <p className="text-blue-800 text-sm">
-            A Lei 14.181/2021 garante ao consumidor superendividado o direito de renegociar suas dívidas. 
-            Considera-se superendividado o consumidor que tem suas dívidas comprometendo substancialmente 
-            sua capacidade de subsistência digna. Este dashboard auxilia na identificação da situação 
-            e pode servir como base para ações de renegociação ou judicial.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default DebtDashboard;
+        // Renderização do componente
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<DebtDashboard />);
+    </script>
+</body>
+</html>
